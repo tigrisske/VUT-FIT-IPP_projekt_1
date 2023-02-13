@@ -1,3 +1,8 @@
-zedol si mi cicinu 
+#ahoj
+.IppCode23     #ahoj 
+zedol si #mi cicinu 
+
+
 gazdik ma rad nohy
+#aj toto je comment
 nozicky
