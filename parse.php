@@ -9,7 +9,7 @@ class InputValidator {
 	//fields
 	private $input;
 
-	//methods
+	//methods dobre moj
 
 	//constructor
 	public function __construct($input) {
