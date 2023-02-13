@@ -15,7 +15,7 @@ class InputValidator {
 	public function __construct($input) {
 		$this->input = $input;
 	}
-
+    //komentar
 
 	public function get_line(){
 		return $this->input;
