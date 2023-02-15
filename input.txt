@@ -1,8 +1,6 @@
-#ahoj
-.IppCode23     #ahoj 
-zedol si #mi cicinu 
+.IPPcode23
+MOVE GF@dobremoj TF@ahojtykok # hahah
+PUSHS LF@_cau
 
+MOVE GF@ahoj LF@ajoj
 
-gazdik ma rad nohy
-#aj toto je comment
-nozicky

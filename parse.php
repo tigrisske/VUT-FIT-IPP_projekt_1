@@ -1,10 +1,16 @@
 <?php
+include 'const.php';
 
 
+
+//const DEBUG = true;
+const DEBUG = false;
 $validator = new InputValidator($argv, $argc);
 $lines = $validator->validate_input();
-print_r($lines);
-
+//print_r($lines);
+$analyzer = new Analyzer($lines);
+$analyzer->analyze();
+exit(0);
 class InputValidator {
     //fields
     private  $argc;
@@ -25,7 +31,8 @@ class InputValidator {
         return  $line;
 	}
 
-    //others
+    //other
+
 
     private function display_help(){
         echo "this is help hehe \n";
@@ -35,15 +42,20 @@ class InputValidator {
     {
         //too many arguments
         if ($this->argc > 2) {
-            echo "vela args ty coco \n";
+            if (DEBUG) {
+                echo "Debug: Line " . __LINE__ . "\n";
+            }
             exit(10);
         }
 
         //wrong argument
         if ($this->argc == 2) {
-            if ($this->argv[1] != "--help")
+            if ($this->argv[1] != "--help") {
+                if (DEBUG) {
+                    echo "Debug: Line " . __LINE__ . "\n";
+                }
                 exit(10);
-            else {
+            } else {
                 $this->display_help();
                 exit(0);
             }
@@ -53,12 +65,21 @@ class InputValidator {
     public function delete_comments(): array{
         $lines = array();
         while (($line = $this->get_line()) != false){
-            $line = $this->delete_comment(rtrim($line));
+            $line = $this->delete_comment($line);
+            $line = ltrim(rtrim($line));
+            $line = preg_replace('/\s+/', ' ', $line);
             if ($line !=  '') {
                 array_push($lines, $line);
             }
+
         }
-        return $lines;
+        //echo "lines: /n";
+        //print_r($lines);
+        foreach($lines as $line){
+            $formated_lines[] = explode(" ", $line);
+        }
+
+        return $formated_lines;
     }
 
     private function delete_comment(string $line){
@@ -67,10 +88,13 @@ class InputValidator {
     }
 
     public function handle_prolog(array $lines) : array{
-        $line = rtrim($lines[0]);
-        if (strtolower($line) != ".ippcode23") {
-            echo "chyba hlavicka brasko\n";
+        if (strtolower($lines[0][0]) != ".ippcode23") {
+            #echo "chyba hlavicka brasko\n";
+            if (DEBUG) {
+                echo "Debug: Line " . __LINE__ . "\n";
+            }
             exit(21);
+
         }
         unset($lines[0]);
         return $lines;
@@ -85,4 +109,97 @@ class InputValidator {
 
 }
 
+class Analyzer
+{
+    private $input;
+    private $instructions = INSTRUCTIONS;
+    private $var_functions;
+
+    public function __construct($input)
+    {
+        $this->input = $input;
+        $this->var_functions = array(
+            'check_variable' => function ($word) {
+                return $this->check_frame($word);
+            },
+
+            'check_1' => function($word){
+                return true;
+            },
+
+            'check_2' => function($word){
+                return true;
+            },
+
+            'check_3' => function($word){
+                return true;
+            }
+        );
+    }
+
+    public function analyze()
+    {
+        foreach ($this->input as $line) {
+            $instruction = $line[0];
+            $args = count($line) - 1;
+
+            if (!array_key_exists($instruction, $this->instructions)) {
+                if (DEBUG) {
+                    echo "Debug line:" . __LINE__ . "\n";
+                }
+                exit(23);
+            }
+
+            $expected_args = count($this->instructions[$instruction]);
+            if ($args != $expected_args) {
+                if (DEBUG) {
+                    echo "Debug line:" . __LINE__ . "\n";
+                }
+                exit(23);
+            }
+            $this->check_instruction_args($line);
+
+        }
+
+    }
+
+    private function check_frame($string): bool
+    {
+        $frame = FRAME;
+        if (strlen($string) <= 3) {
+            if (DEBUG) {
+                echo "Debug line: " . __LINE__;
+            }
+            exit(23);
+        }
+        if ($string[2] == '@') {
+            if ($string[1] == 'F') {
+                if (in_array($string[0], $frame)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+
+
+    private function check_instruction_args(array $line): bool {
+        for ($i = 0; $i <count($line); $i++){
+        //foreach ($line as $word) {
+            $word = $line[$i+1];
+            $function_index = $this->instructions[$line[0]][$i];
+            echo "$line[0] \n";
+            echo "word: " . $word . "\n";
+            echo "index: " . $function_index . "\n";
+            echo "\n";
+            //$this->var_functions[$function_index]($word);
+            // if (!$this->var_functions[$this->instructions[$line[0]][$i]]($word)){
+            //if(DEBUG) echo "Debug line: " . __LINE__;
+            //    exit(23);
+        }
+        return true;
+    }
+}
 
