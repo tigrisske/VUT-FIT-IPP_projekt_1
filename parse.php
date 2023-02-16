@@ -111,20 +111,23 @@ class InputValidator {
 
 class Analyzer
 {
+    private $constants = CONSTANTS;
+    private $functions = FUNCTIONS;
     private $input;
     private $instructions = INSTRUCTIONS;
-    private $var_functions;
+    private array $var_functions;
 
     public function __construct($input)
     {
         $this->input = $input;
         $this->var_functions = array(
             'check_variable' => function ($word) {
+                //TODO - este ostatne atributy premennej skontrolovat
                 return $this->check_frame($word);
             },
 
-            'check_1' => function($word){
-                return true;
+            'check_constant' => function($word){
+                return $this->check_frame($word) or $this->check_prefix_const($word);
             },
 
             'check_2' => function($word){
@@ -162,7 +165,15 @@ class Analyzer
         }
 
     }
-
+    function check_prefix_const(string $string): bool
+    {
+        $pattern = '/^(bool|int|nil|string)@/';
+        return preg_match($pattern, $string) === 1;
+    }
+    private function check_const($string) : bool {
+        //$constants = CONSTANTS;
+        return ($this->check_prefix_const($string));
+    }
     private function check_frame($string): bool
     {
         $frame = FRAME;
@@ -170,7 +181,7 @@ class Analyzer
             if (DEBUG) {
                 echo "Debug line: " . __LINE__;
             }
-            exit(23);
+            return false;
         }
         if ($string[2] == '@') {
             if ($string[1] == 'F') {
@@ -185,19 +196,22 @@ class Analyzer
 
 
 
-    private function check_instruction_args(array $line): bool {
-        for ($i = 0; $i <count($line); $i++){
-        //foreach ($line as $word) {
-            $word = $line[$i+1];
-            $function_index = $this->instructions[$line[0]][$i];
-            echo "$line[0] \n";
-            echo "word: " . $word . "\n";
-            echo "index: " . $function_index . "\n";
-            echo "\n";
-            //$this->var_functions[$function_index]($word);
-            // if (!$this->var_functions[$this->instructions[$line[0]][$i]]($word)){
-            //if(DEBUG) echo "Debug line: " . __LINE__;
-            //    exit(23);
+    private function check_instruction_args(array $line): bool
+    {
+        for ($i = 0; $i < count($line) - 1; $i++) {
+            //foreach ($line as $word) {
+            $word = $line[$i + 1];
+            $function_index = $this->functions[$this->instructions[$line[0]][$i]];
+//            echo "$line[0] \n";
+//            echo "word: " . $word . "\n";
+//            echo "index: " . $function_index . "\n";
+//            echo "\n";
+//            $this->var_functions[$function_index]($word);
+//            $this->var_functions[$function_index]($word);
+            if (!$this->var_functions[$function_index]($word)) {
+                if (DEBUG) echo "Debug line: " . __LINE__;
+                exit(23);
+            }
         }
         return true;
     }

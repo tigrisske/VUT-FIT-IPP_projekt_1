@@ -1,6 +1,6 @@
 .IPPcode23
-MOVE GF@dobremoj TF@ahojtykok # hahah
-PUSHS LF@_cau
+MOVE GF@dobremoj string@ahojtykok # hahah
+PUSHS int@_cau
 
-MOVE GF@ahoj LF@ajoj
+MOVE GF@ahoj bool@ajoj
 
