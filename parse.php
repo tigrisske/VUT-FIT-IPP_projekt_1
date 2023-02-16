@@ -127,7 +127,7 @@ class Analyzer
             },
 
             'check_constant' => function($word){
-                return $this->check_frame($word) or $this->check_prefix_const($word);
+                return $this->check_frame($word) or $this->check_const($word);
             },
 
             'check_2' => function($word){
@@ -165,14 +165,21 @@ class Analyzer
         }
 
     }
-    function check_prefix_const(string $string): bool
+    function check_const(string $string): bool
     {
         $pattern = '/^(bool|int|nil|string)@/';
-        return preg_match($pattern, $string) === 1;
-    }
-    private function check_const($string) : bool {
-        //$constants = CONSTANTS;
-        return ($this->check_prefix_const($string));
+        //first check if the prefix is matched
+        if(!preg_match($string, $pattern)) return false;
+        //split string into 2 and check what comes after "@"
+        $after_at = explode('@',$string)[1];
+        $before_at = explode('@',$string)[0];
+        //now check whether string after "@" matches corresponding suffix
+        if ($before_at == "bool") return preg_match($after_at, '/^(true|false)/');
+        if ($before_at == "nil") return preg_match($after_at, '/^(nil)/');
+        if($before_at == "int") return preg_match($after_at, '^\d+$');
+
+        //TODO dokoncit to pre string
+        return true;
     }
     private function check_frame($string): bool
     {

@@ -2,5 +2,5 @@
 MOVE GF@dobremoj string@ahojtykok # hahah
 PUSHS int@_cau
 
-MOVE GF@ahoj bool@ajoj
+MOVE GF@ahoj bool@false
 
