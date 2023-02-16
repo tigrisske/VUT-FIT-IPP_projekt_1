@@ -1,8 +1,6 @@
 <?php
 include 'const.php';
 
-
-
 //const DEBUG = true;
 const DEBUG = false;
 $validator = new InputValidator($argv, $argc);
@@ -10,6 +8,7 @@ $lines = $validator->validate_input();
 //print_r($lines);
 $analyzer = new Analyzer($lines);
 $analyzer->analyze();
+if (DEBUG) echo "OK \n";
 exit(0);
 class InputValidator {
     //fields
@@ -111,7 +110,7 @@ class InputValidator {
 
 class Analyzer
 {
-    private $constants = CONSTANTS;
+    private $types = TYPES;
     private $functions = FUNCTIONS;
     private $input;
     private $instructions = INSTRUCTIONS;
@@ -123,19 +122,20 @@ class Analyzer
         $this->var_functions = array(
             'check_variable' => function ($word) {
                 //TODO - este ostatne atributy premennej skontrolovat
-                return $this->check_frame($word);
+                return ($this->check_frame($word) and ($this->check_var($word)));
             },
 
             'check_constant' => function($word){
                 return $this->check_frame($word) or $this->check_const($word);
             },
 
-            'check_2' => function($word){
-                return true;
+            'check_type' => function($word){
+                return in_array($word, $this->types);
             },
 
-            'check_3' => function($word){
-                return true;
+            'check_label' => function($word){
+                return (preg_match( '/^[a-zA-Z0-9:_$&%*!?\-]+$/', $word) and
+                    preg_match( '/^[a-zA-Z:_\$&%\*!\?][a-zA-Z:_\$&%\*!\?-]*$/',$word[0]));
             }
         );
     }
@@ -143,7 +143,7 @@ class Analyzer
     public function analyze()
     {
         foreach ($this->input as $line) {
-            $instruction = $line[0];
+            $instruction = strtoupper($line[0]);
             $args = count($line) - 1;
 
             if (!array_key_exists($instruction, $this->instructions)) {
@@ -165,62 +165,52 @@ class Analyzer
         }
 
     }
-    function check_const(string $string): bool
+    private function check_const(string $string): bool
     {
-        $pattern = '/^(bool|int|nil|string)@/';
         //first check if the prefix is matched
-        if(!preg_match($string, $pattern)) return false;
+        $pattern = '/^(bool|int|nil|string)@/';
+        if(!preg_match($pattern, $string)) return false;
         //split string into 2 and check what comes after "@"
         $after_at = explode('@',$string)[1];
         $before_at = explode('@',$string)[0];
         //now check whether string after "@" matches corresponding suffix
-        if ($before_at == "bool") return preg_match($after_at, '/^(true|false)/');
-        if ($before_at == "nil") return preg_match($after_at, '/^(nil)/');
-        if($before_at == "int") return preg_match($after_at, '^\d+$');
+        if ($before_at == "bool") return preg_match( '/^(true|false)/', $after_at);
+        if ($before_at == "nil") return preg_match( '/^(nil)/', $after_at);
+        if($before_at == "int") return preg_match( '/^\d+$/',$after_at);
 
         //TODO dokoncit to pre string
         return true;
     }
     private function check_frame($string): bool
     {
-        $frame = FRAME;
         if (strlen($string) <= 3) {
-            if (DEBUG) {
-                echo "Debug line: " . __LINE__;
-            }
+            if (DEBUG) echo "Debug line: " . __LINE__;
             return false;
         }
-        if ($string[2] == '@') {
-            if ($string[1] == 'F') {
-                if (in_array($string[0], $frame)) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
+        return (preg_match('/^[GTL]F@/', $string));
     }
 
+    private function check_var($string) : bool {
+        //after "@" should come alpha/special char followed by alpha/numeric/special
+        //$before_at = explode("@", $string)[0];
+        $after_at = explode("@", $string)[1];
+        return (preg_match( '/^[a-zA-Z0-9:_$&%*!?\-]+$/', $after_at) and
+            preg_match( '/^[a-zA-Z:_\$&%\*!\?][a-zA-Z:_\$&%\*!\?-]*$/',$after_at[0]));
 
-
-    private function check_instruction_args(array $line): bool
+    }
+    private function check_instruction_args(array $line)
     {
         for ($i = 0; $i < count($line) - 1; $i++) {
-            //foreach ($line as $word) {
             $word = $line[$i + 1];
-            $function_index = $this->functions[$this->instructions[$line[0]][$i]];
-//            echo "$line[0] \n";
-//            echo "word: " . $word . "\n";
-//            echo "index: " . $function_index . "\n";
-//            echo "\n";
-//            $this->var_functions[$function_index]($word);
-//            $this->var_functions[$function_index]($word);
+            $function_index = $this->functions[$this->instructions[strtoupper($line[0])][$i]];
             if (!$this->var_functions[$function_index]($word)) {
                 if (DEBUG) echo "Debug line: " . __LINE__;
                 exit(23);
             }
         }
-        return true;
     }
 }
 
+class Generator {
+
+}

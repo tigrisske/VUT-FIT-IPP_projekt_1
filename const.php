@@ -4,8 +4,8 @@ const SYMBOL = 1;
 const TYPE = 2;
 const LABEL = 3;
 
-const FUNCTIONS = ['check_variable', 'check_constant', 'check_2', 'check_3'];
-const CONSTANTS = ['int', 'bool', 'string', 'nil'];
+const FUNCTIONS = ['check_variable', 'check_constant', 'check_type', 'check_label'];
+const TYPES = ['int', 'bool', 'string'];
 
 const FRAME = ["G", "T", "L"];
 const INSTRUCTIONS = [

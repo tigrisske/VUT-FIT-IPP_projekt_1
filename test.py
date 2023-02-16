@@ -59,11 +59,10 @@ class DirTester:
 
             command = "php parse.php"
 
-            stderr_output = subprocess.PIPE if not self.show_errors else subprocess.STDOUT
             result = subprocess.run(command,
                                     input=files["src"],
                                     stdout=subprocess.PIPE,
-                                    stderr=stderr_output,
+                                    stderr=subprocess.PIPE,
                                     encoding="utf-8",
                                     shell=True)
 
@@ -108,6 +107,9 @@ class DirTester:
             # for normal tests
             if not files_same:
                 print(f"{RED} TEST [{self.cur_test}/{self.num_tests}] {os.path.basename(src)} unsuccessful {BLACK}")
+                if self.show_errors:
+                    print(result.stderr)
+
                 print("------------------------------")
                 if self.verbose:
                     print(files["src"])
@@ -131,8 +133,8 @@ class DirTester:
                     print(files["src"])
                     print()
 
-                print(f"{RED} TEST [{self.cur_test}/{self.num_tests}] {os.path.basename(src)} unsuccessful - wrong \
-                        return code: expected {files['rc']} got {result.returncode}{BLACK}")
+                print(f"{RED} TEST [{self.cur_test}/{self.num_tests}] {os.path.basename(src)} unsuccessful - wrong \n\
+return code: expected {files['rc']} got {result.returncode}{BLACK}")
                 return False
 
             print(f"{GREEN} TEST [{self.cur_test}/{self.num_tests}] {os.path.basename(src)} successful {BLACK}")
