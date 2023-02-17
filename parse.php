@@ -8,6 +8,9 @@ $lines = $validator->validate_input();
 //print_r($lines);
 $analyzer = new Analyzer($lines);
 $analyzer->analyze();
+$generator = new IPPCode23($lines);
+$code = $generator->toXml();
+//echo $code;
 if (DEBUG) echo "OK \n";
 exit(0);
 class InputValidator {
@@ -210,7 +213,27 @@ class Analyzer
         }
     }
 }
-
-class Generator {
-
-}
+//class IPPCode23 {
+//    private $lines;
+//
+//    public function __construct(array $lines) {
+//        $this->lines = $lines;
+//    }
+//
+//    public function toXml(): string {
+/*        $xml = new SimpleXMLElement('<?xml version="1.0" encoding="UTF-8"?><program language="IPPcode23"></program>');*/
+//        print($xml->asXML() );
+//        $nl = 1;
+//        foreach ($this->lines as $line) {
+//            $instruction = $xml->addChild('instruction');
+//            $instruction->addAttribute('order', $nl);
+//            $instruction->addAttribute('opcode', $line[0]);
+//            $nl++;
+//            foreach (array_slice($line, 1) as $arg) {
+//                $instruction->addChild('arg', $arg);
+//            }
+//            echo $instruction->asXML() . "\n";
+//        }
+//        return $xml->asXML();
+//    }
+//}
