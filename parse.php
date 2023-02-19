@@ -10,7 +10,7 @@ $analyzer = new Analyzer($lines);
 $analyzer->analyze();
 $generator = new IPPCode23($lines);
 $code = $generator->toXml();
-//echo $code;
+echo $code;
 if (DEBUG) echo "OK \n";
 exit(0);
 class InputValidator {
@@ -138,7 +138,7 @@ class Analyzer
 
             'check_label' => function($word){
                 return (preg_match( '/^[a-zA-Z0-9:_$&%*!?\-]+$/', $word) and
-                    preg_match( '/^[a-zA-Z:_\$&%\*!\?][a-zA-Z:_\$&%\*!\?-]*$/',$word[0]));
+                    preg_match( '/^[a-zA-Z:_\$&%\*!\?-][a-zA-Z:_\$&%\*!\?-]*$/',$word[0]));
             }
         );
     }
@@ -177,9 +177,9 @@ class Analyzer
         $after_at = explode('@',$string)[1];
         $before_at = explode('@',$string)[0];
         //now check whether string after "@" matches corresponding suffix
-        if ($before_at == "bool") return preg_match( '/^(true|false)/', $after_at);
-        if ($before_at == "nil") return preg_match( '/^(nil)/', $after_at);
-        if($before_at == "int") return preg_match( '/^\d+$/',$after_at);
+        if ($before_at == "bool") return preg_match( '/^(true|false)$/', $after_at);
+        if ($before_at == "nil") return ("nil" == $after_at);
+        if($before_at == "int") return preg_match( '/^[-+]?[0-9]+$/',$after_at);
 
         //TODO dokoncit to pre string
         return true;
@@ -213,27 +213,52 @@ class Analyzer
         }
     }
 }
-//class IPPCode23 {
-//    private $lines;
-//
-//    public function __construct(array $lines) {
-//        $this->lines = $lines;
-//    }
-//
-//    public function toXml(): string {
-/*        $xml = new SimpleXMLElement('<?xml version="1.0" encoding="UTF-8"?><program language="IPPcode23"></program>');*/
-//        print($xml->asXML() );
-//        $nl = 1;
-//        foreach ($this->lines as $line) {
-//            $instruction = $xml->addChild('instruction');
-//            $instruction->addAttribute('order', $nl);
-//            $instruction->addAttribute('opcode', $line[0]);
-//            $nl++;
-//            foreach (array_slice($line, 1) as $arg) {
-//                $instruction->addChild('arg', $arg);
-//            }
-//            echo $instruction->asXML() . "\n";
-//        }
-//        return $xml->asXML();
-//    }
-//}
+class IPPCode23 {
+    private $lines;
+
+    //regexes
+    private $variable = '/^[GTL]F@[a-zA-Z:_\$&%\*!\?][a-zA-Z:_\$&%\*!\?-]*$/' ;
+
+    public function __construct(array $lines) {
+        $this->lines = $lines;
+    }
+
+    public function toXml(): string {
+        $xml = new SimpleXMLElement('<?xml version="1.0" encoding="UTF-8"?><program language="IPPcode23"></program>');
+        $nl = 1;
+        foreach ($this->lines as $line) {
+            $instruction = $xml->addChild('instruction');
+            $instruction->addAttribute('order', $nl);
+            $instruction->addAttribute('opcode', strtoupper($line[0]));
+            $nl++;
+            foreach (array_slice($line, 1) as $arg) {
+                $argElem = $instruction->addChild('arg' . count($instruction->children())+1);
+                if ($arg == 'nil@nil') {
+                    $argElem->addAttribute('type', 'nil');
+                } elseif (preg_match('/^int@[-+]?[0-9]+$/',$arg)) {
+                    $argElem->addAttribute('type', 'int');
+                } elseif (preg_match('/^bool@(true|false)$/', $arg)) {
+                    $argElem->addAttribute('type', 'bool');
+                } elseif (preg_match('/^string@(.+)$/', $arg, $matches)) {
+                    $argElem->addAttribute('type', 'string');
+                }
+                elseif (preg_match($this->variable, $arg, $matches)) {
+                    $argElem->addAttribute('type', 'var' );
+                }
+                else{
+                    $argElem->addAttribute('type', 'label');
+                }
+            }
+        }
+        //return($xml->asXML());
+        return str_replace("\n\n","\n",str_replace('>', ">\n", $xml->asXML()));
+    }
+}
+
+class Formatter{
+   private $input;
+
+   public function format($input){
+       $formatted = str_replace('<', "\n", $input);
+   }
+}
