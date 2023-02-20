@@ -1,11 +1,10 @@
 <?php
 include 'const.php';
 
-//const DEBUG = true;
-const DEBUG = false;
+const DEBUG = true;
+//const DEBUG = false;
 $validator = new InputValidator($argv, $argc);
 $lines = $validator->validate_input();
-//print_r($lines);
 $analyzer = new Analyzer($lines);
 $analyzer->analyze();
 $generator = new IPPCode23($lines);
@@ -16,9 +15,10 @@ exit(0);
 class InputValidator {
     //fields
     private  $argc;
+    private $MAXARGS=2;
     private $argv;
-
-	//methods
+    private $comment_syntax_regex = '/#.*$/m';
+    private $header = ".ippcode23";
 
 	//constructor
 	public function __construct($argv, $argc) {
@@ -28,22 +28,20 @@ class InputValidator {
 
 
     //getters
-	public function get_line(){
-        $line = fgets(STDIN);
-        return  $line;
+	public function get_line() {
+        return  fgets(STDIN);
 	}
 
     //other
-
-
     private function display_help(){
+        //TODO dokonci help brasko
         echo "this is help hehe \n";
     }
 
     public function check_args()
     {
         //too many arguments
-        if ($this->argc > 2) {
+        if ($this->argc > $this->MAXARGS) {
             if (DEBUG) {
                 echo "Debug: Line " . __LINE__ . "\n";
             }
@@ -65,6 +63,7 @@ class InputValidator {
     }
 
     public function delete_comments(): array{
+        //first we delete comments from lines
         $lines = array();
         while (($line = $this->get_line()) != false){
             $line = $this->delete_comment($line);
@@ -75,8 +74,7 @@ class InputValidator {
             }
 
         }
-        //echo "lines: /n";
-        //print_r($lines);
+        //next we format output into 2D array
         foreach($lines as $line){
             $formated_lines[] = explode(" ", $line);
         }
@@ -85,20 +83,20 @@ class InputValidator {
     }
 
     private function delete_comment(string $line){
-        $line = preg_replace('/#.*$/m', '', $line);
+        $line = preg_replace($this->comment_syntax_regex, '', $line);
         return $line;
     }
 
     public function handle_prolog(array $lines) : array{
-        if (strtolower($lines[0][0]) != ".ippcode23") {
+        if (strtolower($lines[0][0]) != $this->header) {
             #echo "chyba hlavicka brasko\n";
             if (DEBUG) {
                 echo "Debug: Line " . __LINE__ . "\n";
             }
             exit(21);
-
         }
-        unset($lines[0]);
+
+        unset($lines[0]); //after validating header, we delete it
         return $lines;
     }
 
@@ -108,7 +106,6 @@ class InputValidator {
         $lines = $this->handle_prolog($lines);
         return $lines;
     }
-
 }
 
 class Analyzer
@@ -124,12 +121,11 @@ class Analyzer
         $this->input = $input;
         $this->var_functions = array(
             'check_variable' => function ($word) {
-                //TODO - este ostatne atributy premennej skontrolovat
                 return ($this->check_frame($word) and ($this->check_var($word)));
             },
 
-            'check_constant' => function($word){
-                return $this->check_frame($word) or $this->check_const($word);
+            'check_symbol' => function($word){
+                return $this->var_functions['check_variable']($word) or $this->check_const($word);
             },
 
             'check_type' => function($word){
@@ -146,25 +142,19 @@ class Analyzer
     public function analyze()
     {
         foreach ($this->input as $line) {
+            // for each line we check:
             $instruction = strtoupper($line[0]);
             $args = count($line) - 1;
 
-            if (!array_key_exists($instruction, $this->instructions)) {
-                if (DEBUG) {
-                    echo "Debug line:" . __LINE__ . "\n";
-                }
-                exit(23);
-            }
+            //1. whether the instruction exists
+            if (!array_key_exists($instruction, $this->instructions)) exit(23);
 
+            //2. whether the amount of arguments is as expected
             $expected_args = count($this->instructions[$instruction]);
-            if ($args != $expected_args) {
-                if (DEBUG) {
-                    echo "Debug line:" . __LINE__ . "\n";
-                }
-                exit(23);
-            }
-            $this->check_instruction_args($line);
+            if ($args != $expected_args) exit(23);
 
+            //whether the format of arguments is valid
+            if(!$this->check_instruction_args($line)) exit(23);
         }
 
     }
@@ -173,9 +163,11 @@ class Analyzer
         //first check if the prefix is matched
         $pattern = '/^(bool|int|nil|string)@/';
         if(!preg_match($pattern, $string)) return false;
+
         //split string into 2 and check what comes after "@"
         $after_at = explode('@',$string)[1];
         $before_at = explode('@',$string)[0];
+
         //now check whether string after "@" matches corresponding suffix
         if ($before_at == "bool") return preg_match( '/^(true|false)$/', $after_at);
         if ($before_at == "nil") return ("nil" == $after_at);
@@ -186,18 +178,14 @@ class Analyzer
     }
     private function check_frame($string): bool
     {
-        if (strlen($string) <= 3) {
-            if (DEBUG) echo "Debug line: " . __LINE__;
-            return false;
-        }
         return (preg_match('/^[GTL]F@/', $string));
     }
 
     private function check_var($string) : bool {
         //after "@" should come alpha/special char followed by alpha/numeric/special
-        //$before_at = explode("@", $string)[0];
-        $after_at = explode("@", $string)[1];
-        return (preg_match( '/^[a-zA-Z0-9:_$&%*!?\-]+$/', $after_at) and
+        $after_at = explode("@", $string)[1]; //we split the string into 2 parts
+        return (preg_match( '/^[a-zA-Z0-9:_$&%*!?\-]+$/', $after_at)
+            and
             preg_match( '/^[a-zA-Z:_\$&%\*!\?][a-zA-Z:_\$&%\*!\?-]*$/',$after_at[0]));
 
     }
@@ -208,9 +196,10 @@ class Analyzer
             $function_index = $this->functions[$this->instructions[strtoupper($line[0])][$i]];
             if (!$this->var_functions[$function_index]($word)) {
                 if (DEBUG) echo "Debug line: " . __LINE__;
-                exit(23);
+                return false;
             }
         }
+        return true;
     }
 }
 class IPPCode23 {
@@ -253,12 +242,4 @@ class IPPCode23 {
         //return($xml->asXML());
         return str_replace("\n\n","\n",str_replace('>', ">\n", $xml->asXML()));
     }
-}
-
-class Formatter{
-   private $input;
-
-   public function format($input){
-       $formatted = str_replace('<', "\n", $input);
-   }
 }

@@ -1,3 +1,3 @@
 .IPPcode23
-MOVE GF@counter nil@nil
+MOv GF@counter nil@nil
 
