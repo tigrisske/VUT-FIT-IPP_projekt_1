@@ -139,6 +139,7 @@ class Analyzer
         );
     }
 
+
     public function analyze()
     {
         foreach ($this->input as $line) {
