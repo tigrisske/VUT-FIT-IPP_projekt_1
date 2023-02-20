@@ -1,8 +1,8 @@
 <?php
 include 'const.php';
 
-const DEBUG = true;
-//const DEBUG = false;
+//const DEBUG = true;
+const DEBUG = false;
 $validator = new InputValidator($argv, $argc);
 $lines = $validator->validate_input();
 $analyzer = new Analyzer($lines);
@@ -147,7 +147,7 @@ class Analyzer
             $args = count($line) - 1;
 
             //1. whether the instruction exists
-            if (!array_key_exists($instruction, $this->instructions)) exit(23);
+            if (!array_key_exists($instruction, $this->instructions)) exit(22);
 
             //2. whether the amount of arguments is as expected
             $expected_args = count($this->instructions[$instruction]);
@@ -206,7 +206,7 @@ class IPPCode23 {
     private $lines;
 
     //regexes
-    private $variable = '/^[GTL]F@[a-zA-Z:_\$&%\*!\?][a-zA-Z:_\$&%\*!\?-]*$/' ;
+    private $variable = '/^[GTL]F@[a-zA-Z:_$&%*!?][a-zA-Z:_$&%*!?\d*]*$/';
 
     public function __construct(array $lines) {
         $this->lines = $lines;
@@ -224,22 +224,43 @@ class IPPCode23 {
                 $argElem = $instruction->addChild('arg' . count($instruction->children())+1);
                 if ($arg == 'nil@nil') {
                     $argElem->addAttribute('type', 'nil');
+                    $arg = explode("@" , $arg)[1];
+                    $argElem[0] = $arg;
                 } elseif (preg_match('/^int@[-+]?[0-9]+$/',$arg)) {
                     $argElem->addAttribute('type', 'int');
+                    $arg = explode("@" , $arg)[1];
+                    $argElem[0] = $arg;
+
                 } elseif (preg_match('/^bool@(true|false)$/', $arg)) {
                     $argElem->addAttribute('type', 'bool');
-                } elseif (preg_match('/^string@(.+)$/', $arg, $matches)) {
+                    $arg = explode("@" , $arg)[1];
+                    $argElem[0] = $arg;
+
+
+                } elseif (preg_match('/^string@(.*)$/', $arg, $matches)) {
                     $argElem->addAttribute('type', 'string');
+                    $arg = explode("@" , $arg)[1];
+                    $argElem[0] = $arg;
                 }
                 elseif (preg_match($this->variable, $arg, $matches)) {
+                    //echo $arg;
                     $argElem->addAttribute('type', 'var' );
+                    //$arg = explode("@" , $arg)[0];
+                    $argElem[0] = $arg;
                 }
                 else{
                     $argElem->addAttribute('type', 'label');
+                    //echo $arg;
+                    //$arg = explode("@" , $arg)[1];
+                    $argElem[0] = $arg;
                 }
             }
         }
         //return($xml->asXML());
-        return str_replace("\n\n","\n",str_replace('>', ">\n", $xml->asXML()));
+        $almost_final = str_replace("\n\n","\n",str_replace('><', ">\n<", $xml->asXML()));
+        $search_regex = '/(var|nil|string|label|bool) \"\n/';
+        $final = str_replace($search_regex, "var\">", $almost_final);
+        return $almost_final;
+
     }
 }

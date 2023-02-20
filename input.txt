@@ -1,3 +1,2 @@
 .IPPcode23
-MOv GF@counter nil@nil
-
+DEFVAR LF@counter4
