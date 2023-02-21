@@ -173,6 +173,12 @@ class Analyzer
         if ($before_at == "bool") return preg_match( '/^(true|false)$/', $after_at);
         if ($before_at == "nil") return ("nil" == $after_at);
         if($before_at == "int") return preg_match( '/^[-+]?[0-9]+$/',$after_at);
+        if($before_at == "string") {
+            $bool =  preg_match( '/^(?:[^\x00-\x20\x23\x5C]|\\\\0{0,2}[0-9]{1,3})*$/m',$after_at);
+            //echo $after_at . "\n";
+            //echo $bool . "\n";
+            return $bool;
+        }
 
         //TODO dokoncit to pre string
         return true;
