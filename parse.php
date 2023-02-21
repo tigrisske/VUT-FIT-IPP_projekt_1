@@ -174,7 +174,10 @@ class Analyzer
         if ($before_at == "nil") return ("nil" == $after_at);
         if($before_at == "int") return preg_match( '/^[-+]?[0-9]+$/',$after_at);
         if($before_at == "string") {
-            $bool =  preg_match( '/^(?:[^\x00-\x20\x23\x5C]|\\\\0{0,2}[0-9]{1,3})*$/m',$after_at);
+
+            $bool = preg_match( '/^(?:[^\x00-\x08\x0B\x0C\x0E-\x1F\x23\x5C]|\\\\(?:[0-9]{3}))*$/m'  ,$after_at);
+            //OG below
+            //$bool =  preg_match( '/^(?:[^\x00-\x20\x23\x5C]|\\\\0{0,2}[0-9]{1,3})*$/m',$after_at);
             //echo $after_at . "\n";
             //echo $bool . "\n";
             return $bool;
@@ -211,6 +214,7 @@ class Analyzer
 }
 class IPPCode23 {
     private $lines;
+    private $types = TYPES;
 
     //regexes
     private $variable = '/^[GTL]F@[a-zA-Z:_$&%*!?][a-zA-Z:_$&%*!?\d*]*$/';
@@ -243,7 +247,6 @@ class IPPCode23 {
                     $arg = explode("@" , $arg)[1];
                     $argElem[0] = $arg;
 
-
                 } elseif (preg_match('/^string@(.*)$/', $arg, $matches)) {
                     $argElem->addAttribute('type', 'string');
                     $arg = explode("@" , $arg)[1];
@@ -255,9 +258,12 @@ class IPPCode23 {
                     //$arg = explode("@" , $arg)[0];
                     $argElem[0] = $arg;
                 }
+                elseif (in_array($arg, $this->types)){
+                    $argElem->addAttribute('type', 'type');
+                    $argElem[0] = $arg;
+                }
                 else{
                     $argElem->addAttribute('type', 'label');
-                    //echo $arg;
                     //$arg = explode("@" , $arg)[1];
                     $argElem[0] = $arg;
                 }

@@ -5,7 +5,7 @@ const TYPE = 2;
 const LABEL = 3;
 
 const FUNCTIONS = ['check_variable', 'check_symbol', 'check_type', 'check_label'];
-const TYPES = ['int', 'bool', 'string@'];
+const TYPES = ['int', 'bool', 'string'];
 
 const FRAME = ["G", "T", "L"];
 const INSTRUCTIONS = [
