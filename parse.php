@@ -1,8 +1,10 @@
 <?php
 include 'const.php';
 
-//const DEBUG = true;
+//debug mode that shows on what line was the return code executed
 const DEBUG = false;
+
+//main:
 $validator = new InputValidator($argv, $argc);
 $lines = $validator->validate_input();
 $analyzer = new Analyzer($lines);
@@ -12,7 +14,11 @@ $code = $generator->toXml();
 echo $code;
 if (DEBUG) echo "OK \n";
 exit(0);
+
 class InputValidator {
+    //class checks the arguments, checks prolog and deletes comments
+    //original input is returned as 2D array
+
     //fields
     private  $argc;
     private $MAXARGS=2;
@@ -38,7 +44,7 @@ class InputValidator {
         echo "this is help hehe \n";
     }
 
-    public function check_args()
+    private function check_args()
     {
         //too many arguments
         if ($this->argc > $this->MAXARGS) {
@@ -62,7 +68,7 @@ class InputValidator {
         }
     }
 
-    public function delete_comments(): array{
+    private function delete_comments(): array{
         //first we delete comments from lines
         $lines = array();
         while (($line = $this->get_line()) != false){
@@ -87,15 +93,13 @@ class InputValidator {
         return $line;
     }
 
-    public function handle_prolog(array $lines) : array{
+    private function handle_prolog(array $lines) : array{
         if (strtolower($lines[0][0]) != $this->header) {
-            #echo "chyba hlavicka brasko\n";
             if (DEBUG) {
                 echo "Debug: Line " . __LINE__ . "\n";
             }
             exit(21);
         }
-
         unset($lines[0]); //after validating header, we delete it
         return $lines;
     }
@@ -110,6 +114,8 @@ class InputValidator {
 
 class Analyzer
 {
+    //class that analyzes the code syntax
+
     private $types = TYPES;
     private $functions = FUNCTIONS;
     private $input;
@@ -118,6 +124,7 @@ class Analyzer
 
     public function __construct($input)
     {
+        //array of functions is initialised in the function constructor
         $this->input = $input;
         $this->var_functions = array(
             'check_variable' => function ($word) {
@@ -176,14 +183,9 @@ class Analyzer
         if($before_at == "string") {
 
             $bool = preg_match( '/^(?:[^\x00-\x08\x0B\x0C\x0E-\x1F\x23\x5C]|\\\\(?:[0-9]{3}))*$/m'  ,$after_at);
-            //OG below
-            //$bool =  preg_match( '/^(?:[^\x00-\x20\x23\x5C]|\\\\0{0,2}[0-9]{1,3})*$/m',$after_at);
-            //echo $after_at . "\n";
-            //echo $bool . "\n";
             return $bool;
         }
 
-        //TODO dokoncit to pre string
         return true;
     }
     private function check_frame($string): bool
@@ -231,6 +233,7 @@ class IPPCode23 {
             $instruction->addAttribute('order', $nl);
             $instruction->addAttribute('opcode', strtoupper($line[0]));
             $nl++;
+            //for cycle that transforms intructions into xml code based on the type of the instruction and its arguments
             foreach (array_slice($line, 1) as $arg) {
                 $argElem = $instruction->addChild('arg' . count($instruction->children())+1);
                 if ($arg == 'nil@nil') {
@@ -253,9 +256,7 @@ class IPPCode23 {
                     $argElem[0] = $arg;
                 }
                 elseif (preg_match($this->variable, $arg, $matches)) {
-                    //echo $arg;
                     $argElem->addAttribute('type', 'var' );
-                    //$arg = explode("@" , $arg)[0];
                     $argElem[0] = $arg;
                 }
                 elseif (in_array($arg, $this->types)){
@@ -264,16 +265,11 @@ class IPPCode23 {
                 }
                 else{
                     $argElem->addAttribute('type', 'label');
-                    //$arg = explode("@" , $arg)[1];
                     $argElem[0] = $arg;
                 }
             }
         }
-        //return($xml->asXML());
-        $almost_final = str_replace("\n\n","\n",str_replace('><', ">\n<", $xml->asXML()));
-        $search_regex = '/(var|nil|string|label|bool) \"\n/';
-        $final = str_replace($search_regex, "var\">", $almost_final);
-        return $almost_final;
-
+        $final = str_replace("\n\n","\n",str_replace('><', ">\n<", $xml->asXML()));
+        return $final;
     }
 }
